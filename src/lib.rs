@@ -155,7 +155,7 @@ impl Acorn {
     /// Note that the `length` is clamped between 1 and 3 because [`u8::MAX`] is 3 digits long.
     ///
     /// [`u8`]: https://doc.rust-lang.org/core/primitive.u8.html
-    /// [`u8::MAX`]:https://doc.rust-lang.org/core/primitive.u8.html#associatedconstant.MAX 
+    /// [`u8::MAX`]: https://doc.rust-lang.org/core/primitive.u8.html#associatedconstant.MAX
     #[allow(clippy::cast_possible_truncation)]
     pub fn generate_fixed_length_u8(&mut self, length: usize) -> u8 {
         let length = length.clamp(1, 3);
@@ -178,7 +178,7 @@ impl Acorn {
     /// Note that the `length` is clamped between 1 and 5 because [`u16::MAX`] is 5 digits long.
     ///
     /// [`u16`]: https://doc.rust-lang.org/core/primitive.u16.html
-    /// [`u16::MAX`]:https://doc.rust-lang.org/core/primitive.u16.html#associatedconstant.MAX 
+    /// [`u16::MAX`]: https://doc.rust-lang.org/core/primitive.u16.html#associatedconstant.MAX
     #[allow(clippy::cast_possible_truncation)]
     pub fn generate_fixed_length_u16(&mut self, length: usize) -> u16 {
         let length = length.clamp(1, 5);
@@ -201,7 +201,7 @@ impl Acorn {
     /// Note that the `length` is clamped between 1 and 10 because [`u32::MAX`] is 10 digits long.
     ///
     /// [`u32`]: https://doc.rust-lang.org/core/primitive.u32.html
-    /// [`u32::MAX`]:https://doc.rust-lang.org/core/primitive.u32.html#associatedconstant.MAX 
+    /// [`u32::MAX`]: https://doc.rust-lang.org/core/primitive.u32.html#associatedconstant.MAX
     #[allow(clippy::cast_possible_truncation)]
     pub fn generate_fixed_length_u32(&mut self, length: usize) -> u32 {
         let length = length.clamp(1, 10);
@@ -223,8 +223,8 @@ impl Acorn {
     /// ```
     /// Note that the `length` is clamped between 1 and 20 because [`u64::MAX`] is 20 digits long.
     ///
-    /// [`u64`]:https://doc.rust-lang.org/core/primitive.u64.html 
-    /// [`u64::MAX`]:https://doc.rust-lang.org/core/primitive.u64.html#associatedconstant.MAX 
+    /// [`u64`]: https://doc.rust-lang.org/core/primitive.u64.html
+    /// [`u64::MAX`]: https://doc.rust-lang.org/core/primitive.u64.html#associatedconstant.MAX
     #[allow(clippy::cast_possible_truncation)]
     pub fn generate_fixed_length_u64(&mut self, length: usize) -> u64 {
         let length = length.clamp(1, 20);
@@ -244,23 +244,29 @@ impl Acorn {
     ///
     /// assert_eq!(707, number); // assuming above input. further calls will produce different results
     /// ```
-    /// Note that the `length` is clamped between 1 and 38 to prevent the [`u128`] from overflowing.
+    /// Note that the `length` is clamped between 1 and 39 because [`u128::MAX`] is 39 digits long.
     ///
     /// [`u128`]: https://doc.rust-lang.org/core/primitive.u128.html
+    /// [`u128::MAX`]: https://doc.rust-lang.org/core/primitive.u128.html#associatedconstant.MAX
     pub fn generate_fixed_length_u128(&mut self, length: usize) -> u128 {
         self.generate_fixed_length_number(length)
     }
     fn generate_fixed_length_number(&mut self, length: usize) -> u128 {
-        let length = length.clamp(1, 38);
+        let length = length.clamp(1, 39);
         if length == 1 {return self.generate_index(10) as u128} // allows generating 0
-        let seed = self.generate_u128();
-        let mut num_string = Acorn::num_string(seed, length);
-        if num_string.len() != length {
-            let difference = length - num_string.len();
-            let new_seed = self.generate_u128();
-            num_string.push_str(&Acorn::num_string(new_seed, difference));
+        loop {
+            let seed = self.generate_u128();
+            let mut num_string = Acorn::num_string(seed, length);
+            if num_string.len() != length {
+                let difference = length - num_string.len();
+                let new_seed = self.generate_u128();
+                num_string.push_str(&Acorn::num_string(new_seed, difference));
+            }
+            match num_string.parse() {
+                Ok(num) => return num,
+                Err(_) => continue,
+            }
         }
-        num_string.parse().unwrap() // guaranteed to be within u128 range
     }
     /// Generate a random [`usize`] within a given [`RangeInclusive`].
     ///
@@ -504,7 +510,7 @@ mod tests {
     #[test]
     fn new_fixed_length_u128() {
         let mut prng = Acorn::new(Order::new(45), Seed::new(1_000_000));
-        assert_eq!(prng.generate_fixed_length_u128(3), 707);
+        assert_eq!(prng.generate_fixed_length_u128(39), 126_308_522_387_136_030_803_407_002_198_611_460_447);
     }
     #[test]
     fn new_fixed_length_number() {
