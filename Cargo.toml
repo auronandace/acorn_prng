@@ -1,0 +1,19 @@
+[package]
+name = "acorn_prng"
+version = "1.0.0"
+edition = "2021"
+license = "ISC"
+description = "A pseudo-random number generator based on the ACORN algorithm."
+readme = "README.md"
+exclude = ["target", "Cargo.lock"]
+documentation = "https://docs.rs/acorn_prng"
+repository = "https://github.com/auronandace/acorn_prng/"
+homepage = "https://github.com/auronandace/acorn_prng/"
+
+[lib]
+name = "acorn_prng"
+path = "src/lib.rs"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
