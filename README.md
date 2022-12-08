@@ -5,7 +5,7 @@ Not cryptographically secure.
 ## Using this library
 Add the following to the [dependencies] section of your Config.toml:
 ```
-acorn_prng = "1.0.0"
+acorn_prng = "1.0.1"
 ```
 
 ## Documentation
