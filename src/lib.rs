@@ -614,4 +614,14 @@ mod tests {
     fn new_numstring() {
         assert_eq!(Acorn::num_string(888, 3), String::from("888"));
     }
+    #[test]
+    fn num_length() {
+        let mut num: u128 = 1;
+        let mut size: usize = 1;
+        for _ in 0..39 {
+            assert_eq!(Acorn::number_length(num), size);
+            if size < 39 {num *= 10;}
+            size += 1;
+        }
+    }
 }
