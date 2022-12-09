@@ -3,8 +3,7 @@
 //! This pseudo-random number generator is based on the [ACORN](http://acorn.wikramaratna.org/concept.html) algorithm.
 //!
 //! It is a `#![no_std]` crate that only requires [alloc](https://doc.rust-lang.org/alloc/index.html) for using
-//! [vectors](https://doc.rust-lang.org/alloc/vec/index.html) and
-//! [strings](https://doc.rust-lang.org/alloc/string/index.html).
+//! [vectors](https://doc.rust-lang.org/alloc/vec/index.html).
 //!
 //! The numbers generated from this prng are not considered cryptographically secure.
 //!
@@ -22,7 +21,7 @@
 #![no_std]
 extern crate alloc;
 
-use alloc::{string::{String, ToString}, vec::Vec};
+use alloc::vec::Vec;
 
 /// The order used for the ACORN algorithm.
 #[derive(Debug, Eq, PartialEq)]
@@ -68,6 +67,16 @@ impl Seed {
     pub fn new(input: u128) -> Self {
         Self(input.clamp(1_000_000, 340_282_366_920_938_463_463_374_607_431_768_211_455))
     }
+}
+
+#[derive(PartialEq)]
+enum NumType {
+    Usize,
+    U8,
+    U16,
+    U32,
+    U64,
+    U128,
 }
 
 /// Additive Congruential Random Number (ACORN) generator.
@@ -131,13 +140,13 @@ impl Acorn {
     /// let mut prng = Acorn::new(Order::new(45), Seed::new(1_000_000));
     /// let number = prng.generate_fixed_length_usize(3);
     ///
-    /// assert_eq!(707, number); // assuming above input. further calls will produce different results
+    /// assert_eq!(448, number); // assuming above input. further calls will produce different results
     /// ```
     /// Note that the max size of a [`usize`] is platform dependant.
     ///
     /// [`usize`]: https://doc.rust-lang.org/core/primitive.usize.html
     pub fn generate_fixed_length_usize(&mut self, length: usize) -> usize {
-        let number = self.generate_fixed_length_number(length);
+        let number = self.generate_fixed_length_number(length, &NumType::Usize);
         number as usize
     }
     /// Generate a random [`u8`] of a fixed digit length.
@@ -150,7 +159,7 @@ impl Acorn {
     /// let mut prng = Acorn::new(Order::new(45), Seed::new(1_000_000));
     /// let number = prng.generate_fixed_length_u8(3);
     ///
-    /// assert_eq!(119, number); // assuming above input. further calls will produce different results
+    /// assert_eq!(192, number); // assuming above input. further calls will produce different results
     /// ```
     /// Note that the `length` is clamped between 1 and 3 because [`u8::MAX`] is 3 digits long.
     ///
@@ -159,8 +168,8 @@ impl Acorn {
     #[allow(clippy::cast_possible_truncation)]
     pub fn generate_fixed_length_u8(&mut self, length: usize) -> u8 {
         let length = length.clamp(1, 3);
-        let mut number = self.generate_fixed_length_number(length);
-        while number > 255 {number = self.generate_fixed_length_number(length);}
+        let mut number = self.generate_fixed_length_number(length, &NumType::U8);
+        while number > 255 {number = self.generate_fixed_length_number(length, &NumType::U8);}
         number as u8
     }
     /// Generate a random [`u16`] of a fixed digit length.
@@ -173,7 +182,7 @@ impl Acorn {
     /// let mut prng = Acorn::new(Order::new(45), Seed::new(1_000_000));
     /// let number = prng.generate_fixed_length_u16(3);
     ///
-    /// assert_eq!(707, number); // assuming above input. further calls will produce different results
+    /// assert_eq!(448, number); // assuming above input. further calls will produce different results
     /// ```
     /// Note that the `length` is clamped between 1 and 5 because [`u16::MAX`] is 5 digits long.
     ///
@@ -182,8 +191,8 @@ impl Acorn {
     #[allow(clippy::cast_possible_truncation)]
     pub fn generate_fixed_length_u16(&mut self, length: usize) -> u16 {
         let length = length.clamp(1, 5);
-        let mut number = self.generate_fixed_length_number(length);
-        while number > 65_535 {number = self.generate_fixed_length_number(length);}
+        let mut number = self.generate_fixed_length_number(length, &NumType::U16);
+        while number > 65_535 {number = self.generate_fixed_length_number(length, &NumType::U16);}
         number as u16
     }
     /// Generate a random [`u32`] of a fixed digit length.
@@ -196,7 +205,7 @@ impl Acorn {
     /// let mut prng = Acorn::new(Order::new(45), Seed::new(1_000_000));
     /// let number = prng.generate_fixed_length_u32(3);
     ///
-    /// assert_eq!(707, number); // assuming above input. further calls will produce different results
+    /// assert_eq!(448, number); // assuming above input. further calls will produce different results
     /// ```
     /// Note that the `length` is clamped between 1 and 10 because [`u32::MAX`] is 10 digits long.
     ///
@@ -205,8 +214,8 @@ impl Acorn {
     #[allow(clippy::cast_possible_truncation)]
     pub fn generate_fixed_length_u32(&mut self, length: usize) -> u32 {
         let length = length.clamp(1, 10);
-        let mut number = self.generate_fixed_length_number(length);
-        while number > 4_294_967_295 {number = self.generate_fixed_length_number(length);}
+        let mut number = self.generate_fixed_length_number(length, &NumType::U32);
+        while number > 4_294_967_295 {number = self.generate_fixed_length_number(length, &NumType::U32);}
         number as u32
     }
     /// Generate a random [`u64`] of a fixed digit length.
@@ -219,7 +228,7 @@ impl Acorn {
     /// let mut prng = Acorn::new(Order::new(45), Seed::new(1_000_000));
     /// let number = prng.generate_fixed_length_u64(3);
     ///
-    /// assert_eq!(707, number); // assuming above input. further calls will produce different results
+    /// assert_eq!(448, number); // assuming above input. further calls will produce different results
     /// ```
     /// Note that the `length` is clamped between 1 and 20 because [`u64::MAX`] is 20 digits long.
     ///
@@ -228,8 +237,8 @@ impl Acorn {
     #[allow(clippy::cast_possible_truncation)]
     pub fn generate_fixed_length_u64(&mut self, length: usize) -> u64 {
         let length = length.clamp(1, 20);
-        let mut number = self.generate_fixed_length_number(length);
-        while number > 18_446_744_073_709_551_615 {number = self.generate_fixed_length_number(length);}
+        let mut number = self.generate_fixed_length_number(length, &NumType::U64);
+        while number > 18_446_744_073_709_551_615 {number = self.generate_fixed_length_number(length, &NumType::U64);}
         number as u64
     }
     /// Generate a random [`u128`] of a fixed digit length.
@@ -242,31 +251,20 @@ impl Acorn {
     /// let mut prng = Acorn::new(Order::new(45), Seed::new(1_000_000));
     /// let number = prng.generate_fixed_length_u128(3);
     ///
-    /// assert_eq!(707, number); // assuming above input. further calls will produce different results
+    /// assert_eq!(448, number); // assuming above input. further calls will produce different results
     /// ```
     /// Note that the `length` is clamped between 1 and 39 because [`u128::MAX`] is 39 digits long.
     ///
     /// [`u128`]: https://doc.rust-lang.org/core/primitive.u128.html
     /// [`u128::MAX`]: https://doc.rust-lang.org/core/primitive.u128.html#associatedconstant.MAX
     pub fn generate_fixed_length_u128(&mut self, length: usize) -> u128 {
-        self.generate_fixed_length_number(length)
+        self.generate_fixed_length_number(length, &NumType::U128)
     }
-    fn generate_fixed_length_number(&mut self, length: usize) -> u128 {
+    fn generate_fixed_length_number(&mut self, length: usize, num_type: &NumType) -> u128 {
         let length = length.clamp(1, 39);
         if length == 1 {return self.generate_index(10) as u128} // allows generating 0
-        loop {
-            let seed = self.generate_u128();
-            let mut num_string = Acorn::num_string(seed, length);
-            if num_string.len() != length {
-                let difference = length - num_string.len();
-                let new_seed = self.generate_u128();
-                num_string.push_str(&Acorn::num_string(new_seed, difference));
-            }
-            match num_string.parse() {
-                Ok(num) => return num,
-                Err(_) => continue,
-            }
-        }
+        let (lower_bound, upper_bound) = Acorn::generate_bounds(length, num_type);
+        self.generate_number_between_range(lower_bound..=upper_bound)
     }
     /// Generate a random [`usize`] within a given [`RangeInclusive`].
     ///
@@ -276,9 +274,9 @@ impl Acorn {
     /// use acorn_prng::{Acorn, Order, Seed};
     ///
     /// let mut prng = Acorn::new(Order::new(45), Seed::new(1_000_000));
-    /// let number = prng.generate_usize_between_range(50..=777);
+    /// let number = prng.generate_usize_between_range(71..=777);
     ///
-    /// assert_eq!(70, number); // assuming above input. further calls will produce different results
+    /// assert_eq!(419, number); // assuming above input. further calls will produce different results
     /// ```
     ///
     /// [`usize`]: https://doc.rust-lang.org/core/primitive.usize.html
@@ -297,9 +295,9 @@ impl Acorn {
     /// use acorn_prng::{Acorn, Order, Seed};
     ///
     /// let mut prng = Acorn::new(Order::new(45), Seed::new(1_000_000));
-    /// let number = prng.generate_u8_between_range(50..=255);
+    /// let number = prng.generate_u8_between_range(71..=255);
     ///
-    /// assert_eq!(70, number); // assuming above input. further calls will produce different results
+    /// assert_eq!(163, number); // assuming above input. further calls will produce different results
     /// ```
     ///
     /// [`u8`]: https://doc.rust-lang.org/core/primitive.u8.html
@@ -319,9 +317,9 @@ impl Acorn {
     /// use acorn_prng::{Acorn, Order, Seed};
     ///
     /// let mut prng = Acorn::new(Order::new(45), Seed::new(1_000_000));
-    /// let number = prng.generate_u16_between_range(50..=777);
+    /// let number = prng.generate_u16_between_range(71..=777);
     ///
-    /// assert_eq!(70, number); // assuming above input. further calls will produce different results
+    /// assert_eq!(419, number); // assuming above input. further calls will produce different results
     /// ```
     ///
     /// [`u16`]: https://doc.rust-lang.org/core/primitive.u16.html
@@ -341,9 +339,9 @@ impl Acorn {
     /// use acorn_prng::{Acorn, Order, Seed};
     ///
     /// let mut prng = Acorn::new(Order::new(45), Seed::new(1_000_000));
-    /// let number = prng.generate_u32_between_range(50..=777);
+    /// let number = prng.generate_u32_between_range(71..=777);
     ///
-    /// assert_eq!(70, number); // assuming above input. further calls will produce different results
+    /// assert_eq!(419, number); // assuming above input. further calls will produce different results
     /// ```
     ///
     /// [`u32`]: https://doc.rust-lang.org/core/primitive.u32.html
@@ -363,9 +361,9 @@ impl Acorn {
     /// use acorn_prng::{Acorn, Order, Seed};
     ///
     /// let mut prng = Acorn::new(Order::new(45), Seed::new(1_000_000));
-    /// let number = prng.generate_u64_between_range(50..=777);
+    /// let number = prng.generate_u64_between_range(71..=777);
     ///
-    /// assert_eq!(70, number); // assuming above input. further calls will produce different results
+    /// assert_eq!(419, number); // assuming above input. further calls will produce different results
     /// ```
     ///
     /// [`u64`]: https://doc.rust-lang.org/core/primitive.u64.html
@@ -385,9 +383,9 @@ impl Acorn {
     /// use acorn_prng::{Acorn, Order, Seed};
     ///
     /// let mut prng = Acorn::new(Order::new(45), Seed::new(1_000_000));
-    /// let number = prng.generate_u128_between_range(50..=777);
+    /// let number = prng.generate_u128_between_range(71..=777);
     ///
-    /// assert_eq!(70, number); // assuming above input. further calls will produce different results
+    /// assert_eq!(419, number); // assuming above input. further calls will produce different results
     /// ```
     ///
     /// [`u128`]: https://doc.rust-lang.org/core/primitive.u128.html
@@ -395,26 +393,17 @@ impl Acorn {
     pub fn generate_u128_between_range(&mut self, range: core::ops::RangeInclusive<u128>) -> u128 {
         self.generate_number_between_range(range)
     }
-    fn generate_number_between_range(&mut self, range: core::ops::RangeInclusive<u128>) -> u128 {
-        let lower_bound_length = Acorn::number_length(*range.start());
-        let upper_bound_length = Acorn::number_length(*range.end());
-        let difference = upper_bound_length - lower_bound_length;
-        if difference == 0 {
-            let mut output = self.generate_fixed_length_number(lower_bound_length);
-            while output < *range.start() || output > *range.end() {
-                output = self.generate_fixed_length_number(lower_bound_length);
-            }
-            return output;
+    fn generate_from_zero_range(&mut self, upper_bound: u128) -> u128 {
+        if upper_bound.is_power_of_two() {return self.generate_u128() % upper_bound;}
+        let x = if upper_bound > 2_u128.pow(127) {2_u128.pow(127)} else {upper_bound.next_power_of_two()};
+        let mut number = self.generate_u128() % x;
+        while number > upper_bound {
+            number = self.generate_u128() % x;
         }
-        let mut generated_variants = Vec::new();
-        (lower_bound_length..=upper_bound_length).for_each(|num_len| {
-            let mut number = self.generate_fixed_length_number(num_len);
-            while number < *range.start() || number > *range.end() {
-                number = self.generate_fixed_length_number(num_len);
-            }
-            generated_variants.push(number);
-        });
-        generated_variants[self.generate_index(generated_variants.len())]
+        number
+    }
+    fn generate_number_between_range(&mut self, range: core::ops::RangeInclusive<u128>) -> u128 {
+        self.generate_from_zero_range(*range.end() - *range.start()) + *range.start()
     }
     fn generate_index(&mut self, upper_bound: usize) -> usize {
         let mut indicies: Vec<usize> = (0..upper_bound).collect();
@@ -430,54 +419,52 @@ impl Acorn {
         indicies[0]
     }
     fn coin_flip_is_even(&mut self) -> bool {
-        self.generate_fixed_length_number(38) % 2 == 0
+        self.generate_u128() % 2 == 0
     }
-    fn num_string(number: u128, length: usize) -> String {
-        number.to_string().chars().take(length).collect()
+    fn generate_bounds(length: usize, num_type: &NumType) -> (u128, u128) {
+        match length {
+            2 => (10,99),
+            3 => (100, if *num_type == NumType::U8 {u128::from(u8::MAX)} else {999}),
+            4 => (1_000, 9_999),
+            5 => (10_000, if *num_type == NumType::U16 {u128::from(u16::MAX)} else {99_999}),
+            6 => (100_000, 999_999),
+            7 => (1_000_000, 9_999_999),
+            8 => (10_000_000, 99_999_999),
+            9 => (100_000_000, 999_999_999),
+            10 => (1_000_000_000, if *num_type == NumType::U32 {u128::from(u32::MAX)} else {9_999_999_999}),
+            11 => (10_000_000_000, 99_999_999_999),
+            12 => (100_000_000_000, 999_999_999_999),
+            13 => (1_000_000_000_000, 9_999_999_999_999),
+            14 => (10_000_000_000_000, 99_999_999_999_999),
+            15 => (100_000_000_000_000, 999_999_999_999_999),
+            16 => (1_000_000_000_000_000, 9_999_999_999_999_999),
+            17 => (10_000_000_000_000_000, 99_999_999_999_999_999),
+            18 => (100_000_000_000_000_000, 999_999_999_999_999_999),
+            19 => (1_000_000_000_000_000_000, 9_999_999_999_999_999_999),
+            20 => (10_000_000_000_000_000_000,
+                if *num_type == NumType::U64 {u128::from(u64::MAX)} else {99_999_999_999_999_999_999}),
+            21 => (100_000_000_000_000_000_000, 999_999_999_999_999_999_999),
+            22 => (1_000_000_000_000_000_000_000, 9_999_999_999_999_999_999_999),
+            23 => (10_000_000_000_000_000_000_000, 99_999_999_999_999_999_999_999),
+            24 => (100_000_000_000_000_000_000_000, 999_999_999_999_999_999_999_999),
+            25 => (1_000_000_000_000_000_000_000_000, 9_999_999_999_999_999_999_999_999),
+            26 => (10_000_000_000_000_000_000_000_000, 99_999_999_999_999_999_999_999_999),
+            27 => (100_000_000_000_000_000_000_000_000, 999_999_999_999_999_999_999_999_999),
+            28 => (1_000_000_000_000_000_000_000_000_000, 9_999_999_999_999_999_999_999_999_999),
+            29 => (10_000_000_000_000_000_000_000_000_000, 99_999_999_999_999_999_999_999_999_999),
+            30 => (100_000_000_000_000_000_000_000_000_000, 999_999_999_999_999_999_999_999_999_999),
+            31 => (1_000_000_000_000_000_000_000_000_000_000, 9_999_999_999_999_999_999_999_999_999_999),
+            32 => (10_000_000_000_000_000_000_000_000_000_000, 99_999_999_999_999_999_999_999_999_999_999),
+            33 => (100_000_000_000_000_000_000_000_000_000_000, 999_999_999_999_999_999_999_999_999_999_999),
+            34 => (1_000_000_000_000_000_000_000_000_000_000_000, 9_999_999_999_999_999_999_999_999_999_999_999),
+            35 => (10_000_000_000_000_000_000_000_000_000_000_000, 99_999_999_999_999_999_999_999_999_999_999_999),
+            36 => (100_000_000_000_000_000_000_000_000_000_000_000, 999_999_999_999_999_999_999_999_999_999_999_999),
+            37 => (1_000_000_000_000_000_000_000_000_000_000_000_000, 9_999_999_999_999_999_999_999_999_999_999_999_999),
+            38 => (10_000_000_000_000_000_000_000_000_000_000_000_000, 99_999_999_999_999_999_999_999_999_999_999_999_999),
+            39 => (100_000_000_000_000_000_000_000_000_000_000_000_000, u128::MAX),
+            _ => unreachable!(),
+        }
     }
-    fn number_length(input: u128) -> usize {
-    match input {
-        0..=9 => 1,
-        10..=99 => 2,
-        100..=999 => 3,
-        1_000..=9_999 => 4,
-        10_000..=99_999 => 5,
-        100_000..=999_999 => 6,
-        1_000_000..=9_999_999 => 7,
-        10_000_000..=99_999_999 => 8,
-        100_000_000..=999_999_999 => 9,
-        1_000_000_000..=9_999_999_999 => 10,
-        10_000_000_000..=99_999_999_999 => 11,
-        100_000_000_000..=999_999_999_999 => 12,
-        1_000_000_000_000..=9_999_999_999_999 => 13,
-        10_000_000_000_000..=99_999_999_999_999 => 14,
-        100_000_000_000_000..=999_999_999_999_999 => 15,
-        1_000_000_000_000_000..=9_999_999_999_999_999 => 16,
-        10_000_000_000_000_000..=99_999_999_999_999_999 => 17,
-        100_000_000_000_000_000..=999_999_999_999_999_999 => 18,
-        1_000_000_000_000_000_000..=9_999_999_999_999_999_999 => 19,
-        10_000_000_000_000_000_000..=99_999_999_999_999_999_999 => 20,
-        100_000_000_000_000_000_000..=999_999_999_999_999_999_999 => 21,
-        1_000_000_000_000_000_000_000..=9_999_999_999_999_999_999_999 => 22,
-        10_000_000_000_000_000_000_000..=99_999_999_999_999_999_999_999 => 23,
-        100_000_000_000_000_000_000_000..=999_999_999_999_999_999_999_999 => 24,
-        1_000_000_000_000_000_000_000_000..=9_999_999_999_999_999_999_999_999 => 25,
-        10_000_000_000_000_000_000_000_000..=99_999_999_999_999_999_999_999_999 => 26,
-        100_000_000_000_000_000_000_000_000..=999_999_999_999_999_999_999_999_999 => 27,
-        1_000_000_000_000_000_000_000_000_000..=9_999_999_999_999_999_999_999_999_999 => 28,
-        10_000_000_000_000_000_000_000_000_000..=99_999_999_999_999_999_999_999_999_999 => 29,
-        100_000_000_000_000_000_000_000_000_000..=999_999_999_999_999_999_999_999_999_999 => 30,
-        1_000_000_000_000_000_000_000_000_000_000..=9_999_999_999_999_999_999_999_999_999_999 => 31,
-        10_000_000_000_000_000_000_000_000_000_000..=99_999_999_999_999_999_999_999_999_999_999 => 32,
-        100_000_000_000_000_000_000_000_000_000_000..=999_999_999_999_999_999_999_999_999_999_999 => 33,
-        1_000_000_000_000_000_000_000_000_000_000_000..=9_999_999_999_999_999_999_999_999_999_999_999 => 34,
-        10_000_000_000_000_000_000_000_000_000_000_000..=99_999_999_999_999_999_999_999_999_999_999_999 => 35,
-        100_000_000_000_000_000_000_000_000_000_000_000..=999_999_999_999_999_999_999_999_999_999_999_999 => 36,
-        1_000_000_000_000_000_000_000_000_000_000_000_000..=9_999_999_999_999_999_999_999_999_999_999_999_999 => 37,
-        10_000_000_000_000_000_000_000_000_000_000_000_000..=99_999_999_999_999_999_999_999_999_999_999_999_999 => 38,
-        100_000_000_000_000_000_000_000_000_000_000_000_000..=u128::MAX => 39,
-    }
-}
 }
 
 #[cfg(test)]
@@ -523,105 +510,151 @@ mod tests {
     #[test]
     fn new_u128() {
         let mut prng = Acorn::new(Order::new(45), Seed::new(1_000_000));
-        assert_eq!(prng.generate_u128(), 707329019109624976857103382873185628);
+        assert_eq!(prng.generate_u128(), 707_329_019_109_624_976_857_103_382_873_185_628);
     }
     #[test]
     fn new_fixed_length_usize() {
         let mut prng = Acorn::new(Order::new(45), Seed::new(1_000_000));
-        assert_eq!(prng.generate_fixed_length_usize(3), 707);
+        assert_eq!(prng.generate_fixed_length_usize(3), 448);
     }
     #[test]
     fn new_fixed_length_u8() {
         let mut prng = Acorn::new(Order::new(45), Seed::new(1_000_000));
-        assert_eq!(prng.generate_fixed_length_u8(3), 119);
+        assert_eq!(prng.generate_fixed_length_u8(3), 192);
     }
     #[test]
     fn new_fixed_length_u16() {
         let mut prng = Acorn::new(Order::new(45), Seed::new(1_000_000));
-        assert_eq!(prng.generate_fixed_length_u16(3), 707);
+        assert_eq!(prng.generate_fixed_length_u16(5), 17_516);
     }
     #[test]
     fn new_fixed_length_u32() {
         let mut prng = Acorn::new(Order::new(45), Seed::new(1_000_000));
-        assert_eq!(prng.generate_fixed_length_u32(3), 707);
+        assert_eq!(prng.generate_fixed_length_u32(10), 1_674_307_420);
     }
     #[test]
     fn new_fixed_length_u64() {
         let mut prng = Acorn::new(Order::new(45), Seed::new(1_000_000));
-        assert_eq!(prng.generate_fixed_length_u64(3), 707);
+        assert_eq!(prng.generate_fixed_length_u64(20), 11_008_839_946_799_226_204);
     }
     #[test]
     fn new_fixed_length_u128() {
         let mut prng = Acorn::new(Order::new(45), Seed::new(1_000_000));
-        assert_eq!(prng.generate_fixed_length_u128(39), 126_308_522_387_136_030_803_407_002_198_611_460_447);
+        assert_eq!(prng.generate_fixed_length_u128(39), 100_707_329_019_109_624_976_857_103_382_873_185_628);
     }
     #[test]
     fn new_fixed_length_number() {
         let mut prng = Acorn::new(Order::new(45), Seed::new(1_000_000));
-        assert_eq!(prng.generate_fixed_length_number(3), 707);
+        assert_eq!(prng.generate_fixed_length_number(3, &NumType::U128), 448);
     }
     #[test]
     fn new_usize_between_range_different_length() {
         let mut prng = Acorn::new(Order::new(45), Seed::new(1_000_000));
-        assert_eq!(prng.generate_usize_between_range(71..=777), 81);
+        assert_eq!(prng.generate_usize_between_range(71..=777), 419);
     }
     #[test]
     fn new_u8_between_range_different_length() {
         let mut prng = Acorn::new(Order::new(45), Seed::new(1_000_000));
-        assert_eq!(prng.generate_u8_between_range(71..=255), 81);
+        assert_eq!(prng.generate_u8_between_range(71..=255), 163);
     }
     #[test]
     fn new_u16_between_range_different_length() {
         let mut prng = Acorn::new(Order::new(45), Seed::new(1_000_000));
-        assert_eq!(prng.generate_u16_between_range(71..=777), 81);
+        assert_eq!(prng.generate_u16_between_range(71..=777), 419);
     }
     #[test]
     fn new_u32_between_range_different_length() {
         let mut prng = Acorn::new(Order::new(45), Seed::new(1_000_000));
-        assert_eq!(prng.generate_u32_between_range(71..=777), 81);
+        assert_eq!(prng.generate_u32_between_range(71..=777), 419);
     }
     #[test]
     fn new_u64_between_range_different_length() {
         let mut prng = Acorn::new(Order::new(45), Seed::new(1_000_000));
-        assert_eq!(prng.generate_u64_between_range(71..=777), 81);
+        assert_eq!(prng.generate_u64_between_range(71..=777), 419);
     }
     #[test]
     fn new_u128_between_range_different_length() {
         let mut prng = Acorn::new(Order::new(45), Seed::new(1_000_000));
-        assert_eq!(prng.generate_u128_between_range(71..=777), 81);
+        assert_eq!(prng.generate_u128_between_range(71..=777), 419);
     }
     #[test]
     fn new_number_between_range_different_length() {
         let mut prng = Acorn::new(Order::new(45), Seed::new(1_000_000));
-        assert_eq!(prng.generate_number_between_range(71..=777), 81);
+        assert_eq!(prng.generate_number_between_range(71..=777), 419);
     }
     #[test]
     fn new_number_between_range_same_length() {
         let mut prng = Acorn::new(Order::new(45), Seed::new(1_000_000));
-        assert_eq!(prng.generate_number_between_range(750..=777), 777);
+        assert_eq!(prng.generate_number_between_range(750..=777), 762);
     }
     #[test]
     fn new_index() {
         let mut prng = Acorn::new(Order::new(45), Seed::new(1_000_000));
-        assert_eq!(prng.generate_index(15), 0);
+        assert_eq!(prng.generate_index(15), 12);
     }
     #[test]
     fn new_coin_flip() {
         let mut prng = Acorn::new(Order::new(45), Seed::new(1_000_000));
-        assert!(!prng.coin_flip_is_even());
+        assert!(prng.coin_flip_is_even());
     }
     #[test]
-    fn new_numstring() {
-        assert_eq!(Acorn::num_string(888, 3), String::from("888"));
+    fn bounds_testing() {
+        assert_eq!(Acorn::generate_bounds(2, &NumType::U128), (10, 99));
+        assert_eq!(Acorn::generate_bounds(4, &NumType::U128), (1_000, 9_999));
+        assert_eq!(Acorn::generate_bounds(6, &NumType::U128), (100_000, 999_999));
+        assert_eq!(Acorn::generate_bounds(7, &NumType::U128), (1_000_000, 9_999_999));
+        assert_eq!(Acorn::generate_bounds(8, &NumType::U128), (10_000_000, 99_999_999));
+        assert_eq!(Acorn::generate_bounds(9, &NumType::U128), (100_000_000, 999_999_999));
+        assert_eq!(Acorn::generate_bounds(11, &NumType::U128), (10_000_000_000, 99_999_999_999));
+        assert_eq!(Acorn::generate_bounds(12, &NumType::U128), (100_000_000_000, 999_999_999_999));
+        assert_eq!(Acorn::generate_bounds(13, &NumType::U128), (1_000_000_000_000, 9_999_999_999_999));
+        assert_eq!(Acorn::generate_bounds(14, &NumType::U128), (10_000_000_000_000, 99_999_999_999_999));
+        assert_eq!(Acorn::generate_bounds(15, &NumType::U128), (100_000_000_000_000, 999_999_999_999_999));
+        assert_eq!(Acorn::generate_bounds(16, &NumType::U128), (1_000_000_000_000_000, 9_999_999_999_999_999));
+        assert_eq!(Acorn::generate_bounds(17, &NumType::U128), (10_000_000_000_000_000, 99_999_999_999_999_999));
+        assert_eq!(Acorn::generate_bounds(18, &NumType::U128), (100_000_000_000_000_000, 999_999_999_999_999_999));
+        assert_eq!(Acorn::generate_bounds(19, &NumType::U128), (1_000_000_000_000_000_000, 9_999_999_999_999_999_999));
+        assert_eq!(Acorn::generate_bounds(21, &NumType::U128),
+            (100_000_000_000_000_000_000, 999_999_999_999_999_999_999));
+        assert_eq!(Acorn::generate_bounds(22, &NumType::U128),
+            (1_000_000_000_000_000_000_000, 9_999_999_999_999_999_999_999));
+        assert_eq!(Acorn::generate_bounds(23, &NumType::U128),
+            (10_000_000_000_000_000_000_000, 99_999_999_999_999_999_999_999));
+        assert_eq!(Acorn::generate_bounds(24, &NumType::U128),
+            (100_000_000_000_000_000_000_000, 999_999_999_999_999_999_999_999));
+        assert_eq!(Acorn::generate_bounds(25, &NumType::U128),
+            (1_000_000_000_000_000_000_000_000, 9_999_999_999_999_999_999_999_999));
+        assert_eq!(Acorn::generate_bounds(26, &NumType::U128),
+            (10_000_000_000_000_000_000_000_000, 99_999_999_999_999_999_999_999_999));
+        assert_eq!(Acorn::generate_bounds(27, &NumType::U128),
+            (100_000_000_000_000_000_000_000_000, 999_999_999_999_999_999_999_999_999));
+        assert_eq!(Acorn::generate_bounds(28, &NumType::U128),
+            (1_000_000_000_000_000_000_000_000_000, 9_999_999_999_999_999_999_999_999_999));
+        assert_eq!(Acorn::generate_bounds(29, &NumType::U128),
+            (10_000_000_000_000_000_000_000_000_000, 99_999_999_999_999_999_999_999_999_999));
+        assert_eq!(Acorn::generate_bounds(30, &NumType::U128),
+            (100_000_000_000_000_000_000_000_000_000, 999_999_999_999_999_999_999_999_999_999));
+        assert_eq!(Acorn::generate_bounds(31, &NumType::U128),
+            (1_000_000_000_000_000_000_000_000_000_000, 9_999_999_999_999_999_999_999_999_999_999));
+        assert_eq!(Acorn::generate_bounds(32, &NumType::U128),
+            (10_000_000_000_000_000_000_000_000_000_000, 99_999_999_999_999_999_999_999_999_999_999));
+        assert_eq!(Acorn::generate_bounds(33, &NumType::U128),
+            (100_000_000_000_000_000_000_000_000_000_000, 999_999_999_999_999_999_999_999_999_999_999));
+        assert_eq!(Acorn::generate_bounds(34, &NumType::U128),
+            (1_000_000_000_000_000_000_000_000_000_000_000, 9_999_999_999_999_999_999_999_999_999_999_999));
+        assert_eq!(Acorn::generate_bounds(35, &NumType::U128),
+            (10_000_000_000_000_000_000_000_000_000_000_000, 99_999_999_999_999_999_999_999_999_999_999_999));
+        assert_eq!(Acorn::generate_bounds(36, &NumType::U128),
+            (100_000_000_000_000_000_000_000_000_000_000_000, 999_999_999_999_999_999_999_999_999_999_999_999));
+        assert_eq!(Acorn::generate_bounds(37, &NumType::U128),
+            (1_000_000_000_000_000_000_000_000_000_000_000_000, 9_999_999_999_999_999_999_999_999_999_999_999_999));
+        assert_eq!(Acorn::generate_bounds(38, &NumType::U128),
+            (10_000_000_000_000_000_000_000_000_000_000_000_000, 99_999_999_999_999_999_999_999_999_999_999_999_999));
     }
     #[test]
-    fn num_length() {
-        let mut num: u128 = 1;
-        let mut size: usize = 1;
-        for _ in 0..39 {
-            assert_eq!(Acorn::number_length(num), size);
-            if size < 39 {num *= 10;}
-            size += 1;
-        }
+    fn new_range_from_zero() {
+        let mut prng = Acorn::new(Order::new(45), Seed::new(1_000_000));
+        assert_eq!(prng.generate_from_zero_range(9999), 7516);
+        assert_eq!(prng.generate_from_zero_range(u128::MAX), 1196907755810977596096526034568560364);
     }
 }
