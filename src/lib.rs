@@ -262,7 +262,6 @@ impl Acorn {
     }
     fn generate_fixed_length_number(&mut self, length: usize, num_type: &NumType) -> u128 {
         let length = length.clamp(1, 39);
-        if length == 1 {return self.generate_index(10) as u128} // allows generating 0
         let (lower_bound, upper_bound) = Acorn::generate_bounds(length, num_type);
         self.generate_number_between_range(lower_bound..=upper_bound)
     }
@@ -405,25 +404,10 @@ impl Acorn {
     fn generate_number_between_range(&mut self, range: core::ops::RangeInclusive<u128>) -> u128 {
         self.generate_from_zero_range(*range.end() - *range.start()) + *range.start()
     }
-    fn generate_index(&mut self, upper_bound: usize) -> usize {
-        let mut indicies: Vec<usize> = (0..upper_bound).collect();
-        while indicies.len() > 1 {
-            let mut coin_flips = Vec::with_capacity(indicies.len());
-            for _ in &indicies {coin_flips.push(self.coin_flip_is_even());}
-            if coin_flips.iter().all(|flip|*flip) | coin_flips.iter().all(|flip|!*flip) {continue;}
-            let mut offset = 0;
-            coin_flips.into_iter().enumerate().for_each(|(index, heads)| {
-                if heads {indicies.remove(index-offset); offset += 1;}
-            });
-        }
-        indicies[0]
-    }
-    fn coin_flip_is_even(&mut self) -> bool {
-        self.generate_u128() % 2 == 0
-    }
     fn generate_bounds(length: usize, num_type: &NumType) -> (u128, u128) {
         match length {
-            2 => (10,99),
+            1 => (0, 9),
+            2 => (10, 99),
             3 => (100, if *num_type == NumType::U8 {u128::from(u8::MAX)} else {999}),
             4 => (1_000, 9_999),
             5 => (10_000, if *num_type == NumType::U16 {u128::from(u16::MAX)} else {99_999}),
@@ -588,17 +572,8 @@ mod tests {
         assert_eq!(prng.generate_number_between_range(750..=777), 762);
     }
     #[test]
-    fn new_index() {
-        let mut prng = Acorn::new(Order::new(45), Seed::new(1_000_000));
-        assert_eq!(prng.generate_index(15), 12);
-    }
-    #[test]
-    fn new_coin_flip() {
-        let mut prng = Acorn::new(Order::new(45), Seed::new(1_000_000));
-        assert!(prng.coin_flip_is_even());
-    }
-    #[test]
     fn bounds_testing() {
+        assert_eq!(Acorn::generate_bounds(1, &NumType::U128), (0, 9));
         assert_eq!(Acorn::generate_bounds(2, &NumType::U128), (10, 99));
         assert_eq!(Acorn::generate_bounds(4, &NumType::U128), (1_000, 9_999));
         assert_eq!(Acorn::generate_bounds(6, &NumType::U128), (100_000, 999_999));
@@ -655,6 +630,6 @@ mod tests {
     fn new_range_from_zero() {
         let mut prng = Acorn::new(Order::new(45), Seed::new(1_000_000));
         assert_eq!(prng.generate_from_zero_range(9999), 7516);
-        assert_eq!(prng.generate_from_zero_range(u128::MAX), 1196907755810977596096526034568560364);
+        assert_eq!(prng.generate_from_zero_range(u128::MAX), 1_196_907_755_810_977_596_096_526_034_568_560_364);
     }
 }
