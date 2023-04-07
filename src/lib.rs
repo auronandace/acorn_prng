@@ -167,7 +167,6 @@ impl Acorn {
     ///
     /// [`u8`]: https://doc.rust-lang.org/core/primitive.u8.html
     /// [`u8::MAX`]: https://doc.rust-lang.org/core/primitive.u8.html#associatedconstant.MAX
-    #[allow(clippy::cast_possible_truncation)]
     pub fn generate_fixed_length_u8(&mut self, length: usize) -> u8 {
         let length = length.clamp(1, 3);
         let mut number = self.generate_fixed_length_number(length, &NumType::U8);
@@ -190,7 +189,6 @@ impl Acorn {
     ///
     /// [`u16`]: https://doc.rust-lang.org/core/primitive.u16.html
     /// [`u16::MAX`]: https://doc.rust-lang.org/core/primitive.u16.html#associatedconstant.MAX
-    #[allow(clippy::cast_possible_truncation)]
     pub fn generate_fixed_length_u16(&mut self, length: usize) -> u16 {
         let length = length.clamp(1, 5);
         let mut number = self.generate_fixed_length_number(length, &NumType::U16);
@@ -213,7 +211,6 @@ impl Acorn {
     ///
     /// [`u32`]: https://doc.rust-lang.org/core/primitive.u32.html
     /// [`u32::MAX`]: https://doc.rust-lang.org/core/primitive.u32.html#associatedconstant.MAX
-    #[allow(clippy::cast_possible_truncation)]
     pub fn generate_fixed_length_u32(&mut self, length: usize) -> u32 {
         let length = length.clamp(1, 10);
         let mut number = self.generate_fixed_length_number(length, &NumType::U32);
@@ -236,7 +233,6 @@ impl Acorn {
     ///
     /// [`u64`]: https://doc.rust-lang.org/core/primitive.u64.html
     /// [`u64::MAX`]: https://doc.rust-lang.org/core/primitive.u64.html#associatedconstant.MAX
-    #[allow(clippy::cast_possible_truncation)]
     pub fn generate_fixed_length_u64(&mut self, length: usize) -> u64 {
         let length = length.clamp(1, 20);
         let mut number = self.generate_fixed_length_number(length, &NumType::U64);
@@ -303,7 +299,6 @@ impl Acorn {
     ///
     /// [`u8`]: https://doc.rust-lang.org/core/primitive.u8.html
     /// [`RangeInclusive`]: https://doc.rust-lang.org/core/ops/struct.RangeInclusive.html
-    #[allow(clippy::cast_possible_truncation)]
     pub fn generate_u8_between_range(&mut self, range: core::ops::RangeInclusive<u8>) -> u8 {
         let start = u128::from(*range.start());
         let end = u128::from(*range.end());
@@ -325,7 +320,6 @@ impl Acorn {
     ///
     /// [`u16`]: https://doc.rust-lang.org/core/primitive.u16.html
     /// [`RangeInclusive`]: https://doc.rust-lang.org/core/ops/struct.RangeInclusive.html
-    #[allow(clippy::cast_possible_truncation)]
     pub fn generate_u16_between_range(&mut self, range: core::ops::RangeInclusive<u16>) -> u16 {
         let start = u128::from(*range.start());
         let end = u128::from(*range.end());
@@ -347,7 +341,6 @@ impl Acorn {
     ///
     /// [`u32`]: https://doc.rust-lang.org/core/primitive.u32.html
     /// [`RangeInclusive`]: https://doc.rust-lang.org/core/ops/struct.RangeInclusive.html
-    #[allow(clippy::cast_possible_truncation)]
     pub fn generate_u32_between_range(&mut self, range: core::ops::RangeInclusive<u32>) -> u32 {
         let start = u128::from(*range.start());
         let end = u128::from(*range.end());
@@ -369,7 +362,6 @@ impl Acorn {
     ///
     /// [`u64`]: https://doc.rust-lang.org/core/primitive.u64.html
     /// [`RangeInclusive`]: https://doc.rust-lang.org/core/ops/struct.RangeInclusive.html
-    #[allow(clippy::cast_possible_truncation)]
     pub fn generate_u64_between_range(&mut self, range: core::ops::RangeInclusive<u64>) -> u64 {
         let start = u128::from(*range.start());
         let end = u128::from(*range.end());
