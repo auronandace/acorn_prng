@@ -1,7 +1,8 @@
 [package]
 name = "acorn_prng"
-version = "3.0.1"
-edition = "2021"
+version = "4.0.0"
+edition = "2024"
+rust-version = "1.87" # is_multiple_of
 license = "ISC"
 description = "A no_std, 0 dependency, pseudo-random number generator based on the ACORN algorithm."
 categories = ["algorithms", "no-std::no-alloc"]
@@ -16,6 +17,7 @@ homepage = "https://github.com/auronandace/acorn_prng/"
 name = "acorn_prng"
 path = "src/lib.rs"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [dependencies]
+
+[lints.clippy]
+pedantic = "warn"

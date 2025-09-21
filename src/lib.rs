@@ -38,8 +38,8 @@ impl Order {
     ///
     /// [`u16::MAX`]: https://doc.rust-lang.org/core/primitive.u16.html#associatedconstant.MAX
     #[must_use]
-    pub fn new(input: usize) -> Self {
-        Self(input.clamp(45, 65_535))
+    pub const fn new(input: usize) -> Self {
+        Self(if input < 45 {45} else if input > 65_535 {65_535} else {input})
     }
 }
 
@@ -61,12 +61,11 @@ impl Seed {
     ///
     /// [`u128::MAX`]: https://doc.rust-lang.org/core/primitive.u128.html#associatedconstant.MAX
     #[must_use]
-    pub fn new(input: u128) -> Self {
-        Self(input.clamp(1_000_000, 340_282_366_920_938_463_463_374_607_431_768_211_455))
+    pub const fn new(input: u128) -> Self {
+        Self(if input < 1_000_000 {1_000_000} else {input})
     }
 }
 
-#[derive(PartialEq)]
 enum NumType {
     Usize,
     U8,
@@ -74,6 +73,21 @@ enum NumType {
     U32,
     U64,
     U128,
+}
+
+impl NumType {
+    const fn is_u8(&self) -> bool {
+        matches!(self, NumType::U8)
+    }
+    const fn is_u16(&self) -> bool {
+        matches!(self, NumType::U16)
+    }
+    const fn is_u32(&self) -> bool {
+        matches!(self, NumType::U32)
+    }
+    const fn is_u64(&self) -> bool {
+        matches!(self, NumType::U64)
+    }
 }
 
 /// Additive Congruential Random Number (ACORN) generator.
@@ -107,19 +121,24 @@ impl Acorn {
     ///
     /// [`u128`]: https://doc.rust-lang.org/core/primitive.u128.html
     #[must_use]
-    pub fn new(k: Order, mut seed: Seed) -> Self {
-        if seed.0 % 2 == 0 {seed.0 += 1} // ensure seed is odd
+    pub const fn new(k: Order, mut seed: Seed) -> Self {
+        if seed.0.is_multiple_of(2) {seed.0 += 1} // ensure seed is odd
         let m = 2_u128.pow(120); // set modulus to 2^120
         seed.0 %= m; // ensure seed is less than m
         let y = (seed.0, seed.0);
         let mut acorn = Self {k,m,y};
-        (0..20).for_each(|_| {acorn.generate_u128();}); // cycle through the first 20
+        let mut index = 0;
+        while index < 20 { // cycle through the first 20
+            acorn.generate_u128();
+            index += 1;
+        }
         acorn
     }
-    fn generate_u128(&mut self) -> u128 {
+    const fn generate_u128(&mut self) -> u128 {
         let mut previous = self.y.0;
         let mut current = self.y.1;
-        for index in 1..self.k.0 {
+        let mut index = 1;
+        while index < self.k.0 {
             let result = (previous + current) % self.m;
             if index % 2 == 0 {
                 self.y.1 = previous;
@@ -129,8 +148,9 @@ impl Acorn {
                 current = self.y.1;
             }
             previous = result;
+            index += 1;
         }
-        if self.k.0 % 2 == 0 {self.y.0} else {self.y.1}
+        if self.k.0.is_multiple_of(2) {self.y.0} else {self.y.1}
     }
     /// Generate a random [`usize`] of a fixed digit length.
     ///
@@ -147,7 +167,7 @@ impl Acorn {
     /// Note that the max size of a [`usize`] is platform dependant.
     ///
     /// [`usize`]: https://doc.rust-lang.org/core/primitive.usize.html
-    pub fn generate_fixed_length_usize(&mut self, length: usize) -> usize {
+    pub const fn generate_fixed_length_usize(&mut self, length: usize) -> usize {
         let number = self.generate_fixed_length_number(length, &NumType::Usize);
         number as usize
     }
@@ -167,8 +187,9 @@ impl Acorn {
     ///
     /// [`u8`]: https://doc.rust-lang.org/core/primitive.u8.html
     /// [`u8::MAX`]: https://doc.rust-lang.org/core/primitive.u8.html#associatedconstant.MAX
-    pub fn generate_fixed_length_u8(&mut self, length: usize) -> u8 {
-        let length = length.clamp(1, 3);
+    #[allow(clippy::cast_possible_truncation)]
+    pub const fn generate_fixed_length_u8(&mut self, length: usize) -> u8 {
+        let length = if length == 0 {1} else if length > 3 {3} else {length};
         let mut number = self.generate_fixed_length_number(length, &NumType::U8);
         while number > 255 {number = self.generate_fixed_length_number(length, &NumType::U8);}
         number as u8
@@ -189,8 +210,9 @@ impl Acorn {
     ///
     /// [`u16`]: https://doc.rust-lang.org/core/primitive.u16.html
     /// [`u16::MAX`]: https://doc.rust-lang.org/core/primitive.u16.html#associatedconstant.MAX
-    pub fn generate_fixed_length_u16(&mut self, length: usize) -> u16 {
-        let length = length.clamp(1, 5);
+    #[allow(clippy::cast_possible_truncation)]
+    pub const fn generate_fixed_length_u16(&mut self, length: usize) -> u16 {
+        let length = if length == 0 {1} else if length > 5 {5} else {length};
         let mut number = self.generate_fixed_length_number(length, &NumType::U16);
         while number > 65_535 {number = self.generate_fixed_length_number(length, &NumType::U16);}
         number as u16
@@ -211,8 +233,9 @@ impl Acorn {
     ///
     /// [`u32`]: https://doc.rust-lang.org/core/primitive.u32.html
     /// [`u32::MAX`]: https://doc.rust-lang.org/core/primitive.u32.html#associatedconstant.MAX
-    pub fn generate_fixed_length_u32(&mut self, length: usize) -> u32 {
-        let length = length.clamp(1, 10);
+    #[allow(clippy::cast_possible_truncation)]
+    pub const fn generate_fixed_length_u32(&mut self, length: usize) -> u32 {
+        let length = if length == 0 {1} else if length > 10 {10} else {length};
         let mut number = self.generate_fixed_length_number(length, &NumType::U32);
         while number > 4_294_967_295 {number = self.generate_fixed_length_number(length, &NumType::U32);}
         number as u32
@@ -233,8 +256,9 @@ impl Acorn {
     ///
     /// [`u64`]: https://doc.rust-lang.org/core/primitive.u64.html
     /// [`u64::MAX`]: https://doc.rust-lang.org/core/primitive.u64.html#associatedconstant.MAX
-    pub fn generate_fixed_length_u64(&mut self, length: usize) -> u64 {
-        let length = length.clamp(1, 20);
+    #[allow(clippy::cast_possible_truncation)]
+    pub const fn generate_fixed_length_u64(&mut self, length: usize) -> u64 {
+        let length = if length == 0 {1} else if length > 20 {20} else {length};
         let mut number = self.generate_fixed_length_number(length, &NumType::U64);
         while number > 18_446_744_073_709_551_615 {number = self.generate_fixed_length_number(length, &NumType::U64);}
         number as u64
@@ -255,11 +279,11 @@ impl Acorn {
     ///
     /// [`u128`]: https://doc.rust-lang.org/core/primitive.u128.html
     /// [`u128::MAX`]: https://doc.rust-lang.org/core/primitive.u128.html#associatedconstant.MAX
-    pub fn generate_fixed_length_u128(&mut self, length: usize) -> u128 {
+    pub const fn generate_fixed_length_u128(&mut self, length: usize) -> u128 {
         self.generate_fixed_length_number(length, &NumType::U128)
     }
-    fn generate_fixed_length_number(&mut self, length: usize, num_type: &NumType) -> u128 {
-        let length = length.clamp(1, 39);
+    const fn generate_fixed_length_number(&mut self, length: usize, num_type: &NumType) -> u128 {
+        let length = if length == 0 {1} else if length > 39 {39} else {length};
         let (lower_bound, upper_bound) = Acorn::generate_bounds(length, num_type);
         self.generate_number_between_range(lower_bound..=upper_bound)
     }
@@ -278,7 +302,7 @@ impl Acorn {
     ///
     /// [`usize`]: https://doc.rust-lang.org/core/primitive.usize.html
     /// [`RangeInclusive`]: https://doc.rust-lang.org/core/ops/struct.RangeInclusive.html
-    pub fn generate_usize_between_range(&mut self, range: core::ops::RangeInclusive<usize>) -> usize {
+    pub const fn generate_usize_between_range(&mut self, range: core::ops::RangeInclusive<usize>) -> usize {
         let start = *range.start() as u128;
         let end = *range.end() as u128;
         let number = self.generate_number_between_range(start..=end);
@@ -299,9 +323,10 @@ impl Acorn {
     ///
     /// [`u8`]: https://doc.rust-lang.org/core/primitive.u8.html
     /// [`RangeInclusive`]: https://doc.rust-lang.org/core/ops/struct.RangeInclusive.html
-    pub fn generate_u8_between_range(&mut self, range: core::ops::RangeInclusive<u8>) -> u8 {
-        let start = u128::from(*range.start());
-        let end = u128::from(*range.end());
+    #[allow(clippy::cast_possible_truncation)]
+    pub const fn generate_u8_between_range(&mut self, range: core::ops::RangeInclusive<u8>) -> u8 {
+        let start = *range.start() as u128;
+        let end = *range.end() as u128;
         let number = self.generate_number_between_range(start..=end);
         number as u8
     }
@@ -320,9 +345,10 @@ impl Acorn {
     ///
     /// [`u16`]: https://doc.rust-lang.org/core/primitive.u16.html
     /// [`RangeInclusive`]: https://doc.rust-lang.org/core/ops/struct.RangeInclusive.html
-    pub fn generate_u16_between_range(&mut self, range: core::ops::RangeInclusive<u16>) -> u16 {
-        let start = u128::from(*range.start());
-        let end = u128::from(*range.end());
+    #[allow(clippy::cast_possible_truncation)]
+    pub const fn generate_u16_between_range(&mut self, range: core::ops::RangeInclusive<u16>) -> u16 {
+        let start = *range.start() as u128;
+        let end = *range.end() as u128;
         let number = self.generate_number_between_range(start..=end);
         number as u16
     }
@@ -341,9 +367,10 @@ impl Acorn {
     ///
     /// [`u32`]: https://doc.rust-lang.org/core/primitive.u32.html
     /// [`RangeInclusive`]: https://doc.rust-lang.org/core/ops/struct.RangeInclusive.html
-    pub fn generate_u32_between_range(&mut self, range: core::ops::RangeInclusive<u32>) -> u32 {
-        let start = u128::from(*range.start());
-        let end = u128::from(*range.end());
+    #[allow(clippy::cast_possible_truncation)]
+    pub const fn generate_u32_between_range(&mut self, range: core::ops::RangeInclusive<u32>) -> u32 {
+        let start = *range.start() as u128;
+        let end = *range.end() as u128;
         let number = self.generate_number_between_range(start..=end);
         number as u32
     }
@@ -362,9 +389,10 @@ impl Acorn {
     ///
     /// [`u64`]: https://doc.rust-lang.org/core/primitive.u64.html
     /// [`RangeInclusive`]: https://doc.rust-lang.org/core/ops/struct.RangeInclusive.html
-    pub fn generate_u64_between_range(&mut self, range: core::ops::RangeInclusive<u64>) -> u64 {
-        let start = u128::from(*range.start());
-        let end = u128::from(*range.end());
+    #[allow(clippy::cast_possible_truncation)]
+    pub const fn generate_u64_between_range(&mut self, range: core::ops::RangeInclusive<u64>) -> u64 {
+        let start = *range.start() as u128;
+        let end = *range.end() as u128;
         let number = self.generate_number_between_range(start..=end);
         number as u64
     }
@@ -383,10 +411,10 @@ impl Acorn {
     ///
     /// [`u128`]: https://doc.rust-lang.org/core/primitive.u128.html
     /// [`RangeInclusive`]: https://doc.rust-lang.org/core/ops/struct.RangeInclusive.html
-    pub fn generate_u128_between_range(&mut self, range: core::ops::RangeInclusive<u128>) -> u128 {
+    pub const fn generate_u128_between_range(&mut self, range: core::ops::RangeInclusive<u128>) -> u128 {
         self.generate_number_between_range(range)
     }
-    fn generate_from_zero_range(&mut self, upper_bound: u128) -> u128 {
+    const fn generate_from_zero_range(&mut self, upper_bound: u128) -> u128 {
         if upper_bound.is_power_of_two() {return self.generate_u128() % upper_bound;}
         let x = if upper_bound > 2_u128.pow(127) {2_u128.pow(127)} else {upper_bound.next_power_of_two()};
         let mut number = self.generate_u128() % x;
@@ -395,21 +423,21 @@ impl Acorn {
         }
         number
     }
-    fn generate_number_between_range(&mut self, range: core::ops::RangeInclusive<u128>) -> u128 {
+    const fn generate_number_between_range(&mut self, range: core::ops::RangeInclusive<u128>) -> u128 {
         self.generate_from_zero_range(*range.end() - *range.start()) + *range.start()
     }
-    fn generate_bounds(length: usize, num_type: &NumType) -> (u128, u128) {
+    const fn generate_bounds(length: usize, num_type: &NumType) -> (u128, u128) {
         match length {
             1 => (0, 9),
             2 => (10, 99),
-            3 => (100, if *num_type == NumType::U8 {u128::from(u8::MAX)} else {999}),
+            3 => (100, if num_type.is_u8() {255} else {999}),
             4 => (1_000, 9_999),
-            5 => (10_000, if *num_type == NumType::U16 {u128::from(u16::MAX)} else {99_999}),
+            5 => (10_000, if num_type.is_u16() {65_535} else {99_999}),
             6 => (100_000, 999_999),
             7 => (1_000_000, 9_999_999),
             8 => (10_000_000, 99_999_999),
             9 => (100_000_000, 999_999_999),
-            10 => (1_000_000_000, if *num_type == NumType::U32 {u128::from(u32::MAX)} else {9_999_999_999}),
+            10 => (1_000_000_000, if num_type.is_u32() {4_294_967_295} else {9_999_999_999}),
             11 => (10_000_000_000, 99_999_999_999),
             12 => (100_000_000_000, 999_999_999_999),
             13 => (1_000_000_000_000, 9_999_999_999_999),
@@ -420,7 +448,7 @@ impl Acorn {
             18 => (100_000_000_000_000_000, 999_999_999_999_999_999),
             19 => (1_000_000_000_000_000_000, 9_999_999_999_999_999_999),
             20 => (10_000_000_000_000_000_000,
-                if *num_type == NumType::U64 {u128::from(u64::MAX)} else {99_999_999_999_999_999_999}),
+                if num_type.is_u64() {18_446_744_073_709_551_615} else {99_999_999_999_999_999_999}),
             21 => (100_000_000_000_000_000_000, 999_999_999_999_999_999_999),
             22 => (1_000_000_000_000_000_000_000, 9_999_999_999_999_999_999_999),
             23 => (10_000_000_000_000_000_000_000, 99_999_999_999_999_999_999_999),
